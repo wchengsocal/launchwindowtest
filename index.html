@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Launch Window</title>
+<!--
+  Launch Window: a space mission design game for the 2026 NASA Space Apps Challenge (Space Mission Design Game).
+  License: Apache License 2.0.
+  Third-party: three.js r128 (MIT License, loaded from cdnjs); Share Tech Mono font (SIL Open Font License, Google Fonts).
+  Data: NASA NSSDCA Planetary Fact Sheet, NASA MMRTG fact sheet, JPL Mars Reconnaissance Orbiter data rate, NASA Deep Space Network overview.
+-->
+<meta name="license" content="Apache-2.0">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="c" aria-label="3D view of the mission"></canvas>
+<canvas id="map" hidden aria-label="Orbit map"></canvas>
+
+<div id="cockpit" hidden><svg id="ckSvg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" font-family="Arial,Helvetica,sans-serif"></svg></div>
+
+<div id="tl"><div class="brand">Launch Window</div><div id="phase">Mission design</div><div id="clock" hidden>T-00:05</div></div>
+<div id="tr">
+  <button class="chip" data-cam="chase" type="button" aria-pressed="true">Chase</button>
+  <button class="chip" data-cam="astro" type="button" aria-pressed="false">Astronaut</button>
+  <button class="chip" data-cam="ground" type="button" aria-pressed="false">Pad cam</button>
+  <button class="chip" id="pauseB" type="button" aria-pressed="false" hidden>Pause</button>
+  <button class="chip" id="mute" type="button" aria-pressed="false">Sound on</button>
+  <button class="chip" id="gfx" type="button" title="Graphics quality">Graphics: High (auto)</button>
+  <button class="chip" id="quitB" type="button" title="Quit to the main menu">Quit</button>
+</div>
+<div id="tele" hidden></div>
+<div id="hint" hidden></div>
+<ol id="feed" aria-live="polite"></ol>
+
+<div id="ctrl" hidden>
+  <button class="cb" type="button" data-hold="left" title="Tilt west (A)">◀ Tilt</button>
+  <button class="cb" type="button" data-hold="right" title="Tilt east (D)">Tilt ▶</button>
+  <button class="cb" type="button" data-hold="thrDn" title="Throttle down (S)">−</button>
+  <div id="thr"><span class="thrw">Throttle</span><div id="thrBar"><i></i></div></div>
+  <button class="cb" type="button" data-hold="thrUp" title="Throttle up (W)">+</button>
+  <button class="cb go" type="button" id="bStage" title="Stage (Space)">Stage</button>
+  <button class="cb" type="button" id="bSas" title="SAS mode (T)">SAS: hold</button>
+  <button class="cb" type="button" id="bAuto" aria-pressed="false" title="Autopilot (P)">Autopilot</button>
+  <button class="cb" type="button" id="bMap" aria-pressed="false" title="Map (M)">Map</button>
+  <button class="cb" type="button" id="bWarp" title="Time warp (. and ,)">Warp ×1</button>
+  <button class="cb go" type="button" id="bSkip" hidden>Skip ahead</button>
+</div>
+
+<div id="prompt" hidden>
+  <div id="pT"></div>
+  <div id="pS"></div>
+  <div id="gWrap" hidden>
+    <div id="gauge"><div id="gFloor"></div><div id="gZone"></div><div id="gNeedle"></div></div>
+    <div class="glabels" id="gLabels"></div>
+  </div>
+  <div id="pBtns"></div>
+  <div class="pk" id="pK"></div>
+</div>
+
+<aside id="panel" aria-label="Mission design">
+  <header><h1>Design your mission</h1></header>
+  <div class="pbody">
+  <div class="tabs" role="tablist" aria-orientation="vertical">
+    <button class="tab" role="tab" type="button" data-tab="mission" aria-selected="true" title="Mission"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/><path d="M12 1v5M12 18v5M1 12h5M18 12h5"/></svg><span>Mission</span></button>
+    <button class="tab" role="tab" type="button" data-tab="rocket" aria-selected="false" title="Rocket"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2c3 3 4 7 4 11v4H8v-4c0-4 1-8 4-11z"/><path d="M8 13l-3 3v4l3-2M16 13l3 3v4l-3-2"/><circle cx="12" cy="9" r="1.6"/><path d="M10.5 20l1.5 3 1.5-3"/></svg><span>Rocket</span></button>
+    <button class="tab" role="tab" type="button" data-tab="sc" aria-selected="false" title="Spacecraft"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="8" width="6" height="8" rx="1"/><path d="M2 10h7M2 14h7M15 10h7M15 14h7M2 8v8M22 8v8"/><path d="M12 8V4M10 4h4"/></svg><span>Spacecraft</span></button>
+    <button class="tab" role="tab" type="button" data-tab="set" aria-selected="false" title="Settings"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg><span>Settings</span></button>
+  </div>
+  <div class="panes" id="panes"></div>
+  </div>
+  <div id="sum"></div>
+</aside>
+
+<aside id="review" aria-label="Integration review" hidden>
+  <header><h1>Integration review</h1><p class="by" id="rvSub"></p></header>
+  <div class="panes rv" id="rvPanes"></div>
+  <div id="rvFoot"></div>
+</aside>
+<div id="rvLabels" hidden></div>
+<div id="fx"></div>
+<div id="fade"></div>
+<div id="intro" hidden>
+  <div class="shade"></div><div class="black" id="iBlack"></div><div class="bar t"></div><div class="bar b"></div>
+  <div id="iTitle"><p class="tk">Space mission design game</p><h1>Launch Window</h1>
+    <p class="tag">Design a space mission on a budget, check every system, then fly it yourself.</p>
+    <p class="lbl">Choose difficulty</p>
+    <div class="diff" role="radiogroup" aria-label="Difficulty">
+      <button type="button" role="radio" data-diff="easy" aria-checked="false">Easy</button>
+      <button type="button" role="radio" data-diff="normal" aria-checked="true">Normal</button>
+      <button type="button" role="radio" data-diff="hard" aria-checked="false">Hard</button>
+    </div>
+    <p class="dsub" id="iDsub"></p>
+    <p class="lbl">Choose mode</p>
+    <div class="modes">
+      <button type="button" class="mode" id="iCamp"><b>&#9654; Campaign</b><small>A mission to Mars on a $900M budget. Starts with a short story intro.</small></button>
+      <button type="button" class="mode alt" id="iSand"><b>Sandbox</b><small>Any destination, no budget cap. Starts with its own short intro.</small></button>
+    </div></div>
+  <div id="iCap" aria-live="polite"></div>
+  <button id="iSkip" type="button">Skip &#9656;&#9656;</button>
+</div>
+<div id="tut" hidden>
+  <div class="hole" id="tHole"></div>
+  <svg class="arw" id="tArw" viewBox="0 0 64 64" aria-hidden="true"><path d="M6 32h36" stroke="#14181c" stroke-width="16" stroke-linecap="round"/><path d="M34 12l22 20-22 20z" fill="#14181c" stroke="#14181c" stroke-width="6" stroke-linejoin="round"/><path d="M8 32h34" stroke="#ffc400" stroke-width="10" stroke-linecap="round"/><path d="M36 17l17 15-17 15z" fill="#ffc400"/></svg>
+  <div class="bub" id="tBub" role="dialog" aria-live="polite"><p class="tn" id="tN"></p><h3 id="tT"></h3><p id="tX"></p>
+    <div class="tf"><button type="button" class="ts" id="tSkip">Skip tutorial</button><button type="button" class="tg" id="tNext">Next</button></div></div>
+</div>
+<div id="quitDlg" hidden><div class="qbox" role="dialog" aria-label="Quit"><h3>Quit to main menu?</h3><p id="qTxt"></p>
+  <div class="row"><button type="button" class="qy" id="qYes">Quit to main menu</button><button type="button" class="qn" id="qNo">Keep playing</button></div></div></div>
+
+<section id="report" hidden>
+  <div class="col">
+    <p class="kicker" id="rKick">Mission report</p>
+    <div id="rScore"></div><div id="rRating"></div><p class="kicker" id="rBest"></p>
+    <ul id="rBreak"></ul>
+    <h2 id="rTeamH">Mission goals</h2><ol id="rTeam"></ol>
+    <h2>Flight log</h2><ol id="rLog"></ol>
+    <h2>Why it went this way</h2><ul id="rWhy"></ul>
+    <h2>NASA data used</h2>
+    <ul id="rSrc">
+      <li><a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/" target="_blank" rel="noopener">NSSDCA Planetary Fact Sheet</a>: planet sizes, surface gravity, distance from the Sun (which sets sunlight strength) and day length.</li>
+      <li><a href="https://www.jpl.nasa.gov/news/nasa-mars-orbiter-speeds-past-data-milestone/" target="_blank" rel="noopener">JPL: Mars Reconnaissance Orbiter data milestone</a>: 3 m dish, downlink up to 6 Mbps. The game scales dish data rates from this.</li>
+      <li><a href="https://science.nasa.gov/wp-content/uploads/2023/04/04_BaldwinVolosin_DSN.pdf" target="_blank" rel="noopener">NASA Deep Space Network overview</a>: 34 m and 70 m antennas at three complexes about 120° apart.</li>
+      <li><a href="https://visibleearth.nasa.gov/collection/1484/blue-marble" target="_blank" rel="noopener">NASA Visible Earth: Blue Marble</a>: the satellite image of Earth, with its cloud layer, seen from orbit.</li>
+      <li><a href="https://science.nasa.gov/wp-content/uploads/2024/02/mmrtg-factsheet-updated-5-18-20-1.pdf" target="_blank" rel="noopener">NASA MMRTG fact sheet</a>: about 110 W of electricity from a 45 kg generator. The game's RTG option uses these numbers.</li>
+    </ul>
+    <p class="kicker">Engine thrust and efficiency are rounded public figures. Delta-v requirements are approximate values from standard delta-v maps. Part costs are gameplay estimates.</p>
+    <p class="kicker">Launch Window by William Cheng, Torrey Pines High School, for the 2026 NASA Space Apps Challenge. Open source under the Apache 2.0 license. Uses three.js (MIT) and Google Fonts (SIL Open Font License).</p>
+    <div class="btns"><button id="again" class="big" type="button">Fly the same design again</button><button id="redesign" class="big alt" type="button">Redesign mission</button></div>
+  </div>
+</section>
+
+<div id="loading">Loading Earth</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="js/earth-images.js"></script>
+<script src="js/util.js"></script>
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/design.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/controls.js"></script>
+<script src="js/flight.js"></script>
+<script src="js/mission.js"></script>
+<script src="js/report.js"></script>
+<script src="js/review.js"></script>
+<script src="js/loop.js"></script>
+<script src="js/intro.js"></script>
+<script src="js/music.js"></script>
+<script src="js/tutorial.js"></script>
+<script src="js/menu.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

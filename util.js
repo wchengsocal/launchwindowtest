@@ -1,0 +1,11 @@
+"use strict";
+const $=id=>document.getElementById(id);
+const V3=THREE.Vector3, DEG=Math.PI/180;
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)), lerp=(a,b,t)=>a+(b-a)*t, rand=(a=0,b=1)=>a+Math.random()*(b-a);
+const easeIO=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2, easeOut=t=>1-Math.pow(1-t,3);
+const G0=9.80665, MU=3.986004418e14, REm=6378137;
+const nf=x=>x>=100?Math.round(x).toLocaleString():x>=10?x.toFixed(0):x>=.01?x.toPrecision(2):x.toExponential(1);
+const fmt=s=>{s=Math.max(0,s);const h=Math.floor(s/3600),m=Math.floor(s%3600/60),x=Math.floor(s%60);return (h?h+":":"")+String(m).padStart(2,"0")+":"+String(x).padStart(2,"0")};
+const rateTxt=m=>m>=1?nf(m)+" Mbps":nf(m*1000)+" kbps";
+const alt=v=>Math.abs(v)<1e4?Math.round(v).toLocaleString()+" m":km(v);
+const km=v=>Math.abs(v)>=1e7?(v/1e3/1e3).toFixed(1)+"k km":Math.round(v/1e3).toLocaleString()+" km";

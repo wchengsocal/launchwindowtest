@@ -1,0 +1,15 @@
+Launch Window
+Made by William Cheng, Torrey Pines High School, for the 2026 NASA Space Apps Challenge.
+Licensed under the Apache License, Version 2.0.
+
+Third-party components (loaded at runtime, not included in this repository):
+
+- three.js r128, Copyright 2010-2021 three.js authors. MIT License.
+  https://github.com/mrdoob/three.js
+- Share Tech Mono, Copyright 2012 Carrois Type Design.
+  SIL Open Font License 1.1. https://fonts.google.com/specimen/Share+Tech+Mono
+
+Data sources: NASA Visible Earth Blue Marble imagery (public domain),
+NASA NSSDCA Planetary Fact Sheet, NASA MMRTG fact sheet,
+JPL Mars Reconnaissance Orbiter, NASA Deep Space Network overview.
+This project is not affiliated with or endorsed by NASA.
